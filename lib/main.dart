@@ -1,122 +1,133 @@
+import 'dart:math';
+
+import 'package:clean_k_chart/clean_k_chart.dart';
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const ExampleApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class ExampleApp extends StatelessWidget {
+  const ExampleApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      title: 'clean_k_chart example',
+      theme: ThemeData(colorSchemeSeed: Colors.blue, useMaterial3: true),
+      home: const DemoPage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class DemoPage extends StatefulWidget {
+  const DemoPage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<DemoPage> createState() => _DemoPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _DemoPageState extends State<DemoPage> {
+  late final List<KLineEntity> _data;
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  final List<MainIndicator> _mainIndicators = [MAIndicator(), EMAIndicator()];
+  final List<SecondaryIndicator> _secondaryIndicators = [
+    MACDIndicator(),
+    KDJIndicator(),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _data = _generateData(count: 180);
+    IndicatorCalculator.calculateAll(
+      _data,
+      _mainIndicators,
+      _secondaryIndicators,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
+      appBar: AppBar(title: const Text('clean_k_chart demo')),
+      body: SingleChildScrollView(
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
           children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+            SizedBox(
+              height: 480,
+              child: KChartWidget(
+                data: _data,
+                mainIndicators: _mainIndicators,
+                secondaryIndicators: _secondaryIndicators,
+                detailBuilder: (entity) => _buildDetail(entity),
+              ),
             ),
+            const Divider(),
+            SizedBox(
+              height: 240,
+              child: DepthChart(
+                bids: _generateDepths(true),
+                asks: _generateDepths(false),
+              ),
+            ),
+            const SizedBox(height: 24),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+    );
+  }
+
+  Widget _buildDetail(KLineEntity entity) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        'O ${entity.open}  H ${entity.high}\n'
+        'L ${entity.low}  C ${entity.close}\n'
+        'VOL ${entity.vol.toStringAsFixed(2)}',
+        style: theme.textTheme.bodySmall,
       ),
     );
   }
+}
+
+List<KLineEntity> _generateData({int count = 180}) {
+  final random = Random(7);
+  final data = <KLineEntity>[];
+  var price = 100.0;
+  final start = DateTime(2026, 5, 1);
+  for (var i = 0; i < count; i++) {
+    final change = (random.nextDouble() - 0.48) * 4;
+    final open = price;
+    final close = (open + change).clamp(1, 1000).toDouble();
+    final high = max(open, close) + random.nextDouble() * 1.5;
+    final low = min(open, close) - random.nextDouble() * 1.5;
+    price = close;
+    data.add(
+      KLineEntity(
+        time: start.millisecondsSinceEpoch + i * 60 * 60 * 1000,
+        open: open,
+        high: high,
+        low: low,
+        close: close,
+        vol: 500 + random.nextDouble() * 2000,
+      ),
+    );
+  }
+  return data;
+}
+
+List<DepthEntity> _generateDepths(bool isBuy) {
+  final random = Random(3);
+  final base = isBuy ? 99.0 : 101.0;
+  return List.generate(40, (i) {
+    final price = isBuy ? base - i * 0.08 : base + i * 0.08;
+    final vol = 800 * pow(0.97, i) + random.nextDouble() * 60;
+    return DepthEntity(price, vol);
+  });
 }

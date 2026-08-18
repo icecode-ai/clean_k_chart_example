@@ -1,21 +1,27 @@
 # clean_k_chart_example
 
-Example app for the `clean_k_chart` package. Currently the unmodified Flutter counter template (`lib/main.dart`); the chart demo is not yet wired and `pubspec.yaml` does not yet depend on `clean_k_chart`.
+Example app for the `clean_k_chart` package. `lib/main.dart` renders a
+demo screen with a `KChartWidget` (MA/EMA main indicators + MACD/KDJ
+secondary indicators, generated sample data) and a `DepthChart`; the
+package is wired as a path dependency.
 
 ## Commands
 
 - `flutter pub get` — fetch dependencies
 - `flutter run` — run app (Android/iOS platforms only)
-- `flutter analyze` — static analysis (flutter_lints ^6.0.0 via `analysis_options.yaml`)
+- `flutter analyze` — static analysis (flutter_lints ^6.0.0 via `analysis_options.yaml`); must report **0 issues**
 - `dart format .` — formatting
 - `flutter test` — no `test/` dir yet
 
-## Wiring the chart demo
+## Notes
 
-- Add a path dependency to use the local package:
+- Sample data is generated locally (`_generateData` / `_generateDepths` in
+  `lib/main.dart`) and passed through `IndicatorCalculator.calculateAll`
+  before being handed to `KChartWidget` — that is the package's data
+  contract.
+- The package dependency uses a relative path:
   ```yaml
   dependencies:
     clean_k_chart:
       path: ../clean_k_chart
   ```
-- Import via `package:clean_k_chart/clean_k_chart.dart`
